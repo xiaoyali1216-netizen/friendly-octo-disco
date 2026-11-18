@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔮 塔罗牌抽牌游戏</title>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        background: linear-gradient(135deg, #0a0e27 0%, #1a1a4e 30%, #2d1b69 60%, #4a148c 100%);
+        min-height: 100vh;
+        color: #e8e6f0;
+        overflow-x: hidden;
+        position: relative;
+    }
+
+    /* 星星背景 */
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: 
+            radial-gradient(2px 2px at 20% 30%, #fff, transparent),
+            radial-gradient(2px 2px at 40% 70%, #ffd700, transparent),
+            radial-gradient(1px 1px at 60% 20%, #fff, transparent),
+            radial-gradient(2px 2px at 80% 50%, #ff69b4, transparent),
+            radial-gradient(1px 1px at 10% 80%, #fff, transparent),
+            radial-gradient(2px 2px at 90% 90%, #ffd700, transparent),
+            radial-gradient(1px 1px at 50% 10%, #fff, transparent),
+            radial-gradient(1px 1px at 30% 60%, #ff69b4, transparent),
+            radial-gradient(2px 2px at 70% 40%, #fff, transparent),
+            radial-gradient(1px 1px at 85% 15%, #ffd700, transparent);
+        background-size: 100% 100%;
+        animation: twinkle 4s ease-in-out infinite alternate;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    @keyframes twinkle {
+        0% { opacity: 0.3; }
+        100% { opacity: 0.8; }
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 40px 20px;
+        position: relative;
+        z-index: 1;
+    }
+
+    /* 标题区域 */
+    .header {
+        text-align: center;
+        margin-bottom: 50px;
+        animation: fadeInDown 1s ease-out;
+    }
+
+    .header h1 {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        background: linear-gradient(45deg, #ffd700, #ff69b4, #9370db);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+        letter-spacing: 3px;
+    }
+
+    .header p {
+        font-size: 1.2rem;
+        color: #b8b5d1;
+        font-style: italic;
+        letter-spacing: 2px;
+    }
+
+    @keyframes fadeInDown {
+        from { opacity: 0; transform: translateY(-30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 游戏区域 */
+    .game-area {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 40px;
+        border: 1px solid rgba(255, 215, 0, 0.2);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        margin-bottom: 40px;
+    }
+
+    .slots-container {
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+    }
+
+    .card-slot {
+        width: 140px;
+        height: 200px;
+        border: 2px dashed rgba(255, 215, 0, 0.4);
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: rgba(0, 0, 0, 0.2);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .card-slot:hover {
+        border-color: #ffd700;
+        box-shadow: 0 0 25px rgba(255, 215, 0, 0.3);
+        transform: translateY(-5px);
+    }
+
+    .card-slot.selected {
+        border-style: solid;
+        border-color: #ffd700;
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+        background: rgba(255, 215, 0, 0.1);
+    }
+
+    .card-slot.filled {
+        border-style: solid;
+        border-color: #9370db;
+        background: linear-gradient(135deg, #1a1a4e, #2d1b69);
+    }
+
+    .slot-placeholder {
+        font-size: 3rem;
+        opacity: 0.3;
+    }
+
+    .slot-label {
+        position: absolute;
+        bottom: 10px;
+        font-size: 0.8rem;
+        color: #9370db;
+        letter-spacing: 1px;
+    }
+
+    .card-display {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 10px;
+    }
+
+    .card-emoji {
+        font-size: 3rem;
+        margin-bottom: 5px;
+    }
+
+    .card-name {
+        font-size: 0.9rem;
+        color: #ffd700;
+        text-align: center;
+        font-weight: bold;
+    }
+
+    .card-orientation {
+        font-size: 0.7rem;
+        color: #ff69b4;
+        margin-top: 3px;
+    }
+
+    .buttons-container {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin-top: 20px;
+    }
+
+    .btn {
+        padding: 15px 40px;
+        font-size: 1.1rem;
+        border: none;
+        border-radius: 50px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: bold;
+        letter-spacing: 2px;
+    }
+
+    .btn-draw {
+        background: linear-gradient(45deg, #ffd700, #ff8c00);
+        color: #1a1a4e;
+        box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+    }
+
+    .btn-draw:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 25px rgba(255, 215, 0, 0.6);
+    }
+
+    .btn-draw:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .btn-reset {
+        background: linear-gradient(45deg, #9370db, #6a5acd);
+        color: white;
+        box-shadow: 0 4px 15px rgba(147, 112, 219, 0.4);
+    }
+
+    .btn-reset:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 25px rgba(147, 112, 219, 0.6);
+    }
+
+    /* 结果区域 */
+    .result-area {
+        margin-top: 30px;
+        padding: 25px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 15px;
+        border-left: 4px solid #ffd700;
+        display: none;
+        animation: slideIn 0.5s ease-out;
+    }
+
+    .result-area.show {
+        display: block;
+    }
+
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateX(-20px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+
+    .result-title {
+        color: #ffd700;
+        font-size: 1.3rem;
+        margin-bottom: 10px;
+    }
+
+    .result-content {
+        color: #d8d5e8;
+        line-height: 1.8;
+    }
+
+    /* 牌库区域 */
+    .deck-section {
+        margin-top: 50px;
+    }
+
+    .deck-title {
+        text-align: center;
+        font-size: 1.8rem;
+        margin-bottom: 25px;
+        color: #ffd700;
+        letter-spacing: 2px;
+    }
+
+    .deck-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 15px;
+    }
+
+    .deck-card {
+        aspect-ratio: 2/3;
+        background: linear-gradient(135deg, #1a1a4e, #2d1b69);
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        padding: 8px;
+        text-align: center;
+    }
+
+    .deck-card:hover {
+        transform: translateY(-5px) scale(1.05);
+        border-color: #ffd700;
+        box-shadow: 0 5px 20px rgba(255, 215, 0, 0.3);
+    }
+
+    .deck-card .emoji {
+        font-size: 1.8rem;
+        margin-bottom: 5px;
+    }
+
+    .deck-card .name {
+        font-size: 0.75rem;
+        color: #ffd700;
+        font-weight: bold;
+    }
+
+    /* 模态框 */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 100;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(5px);
+    }
+
+    .modal.show {
+        display: flex;
+    }
+
+    .modal-content {
+        background: linear-gradient(135deg, #1a1a4e, #2d1b69);
+        border: 2px solid #ffd700;
+        border-radius: 20px;
+        padding: 40px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        position: relative;
+        animation: modalIn 0.3s ease-out;
+        box-shadow: 0 0 50px rgba(255, 215, 0, 0.3);
+    }
+
+    @keyframes modalIn {
+        from { opacity: 0; transform: scale(0.8); }
+        to { opacity: 1; transform: scale(1); }
+    }
+
+    .close-btn {
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #ffd700;
+        transition: transform 0.3s;
+    }
+
+    .close-btn:hover {
+        transform: rotate(90deg);
+    }
+
+    .modal-card-header {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .modal-emoji {
+        font-size: 4rem;
+        margin-bottom: 10px;
+    }
+
+    .modal-card-name {
+        font-size: 1.5rem;
+        color: #ffd700;
+        margin-bottom: 5px;
+    }
+
+    .modal-card-type {
+        color: #9370db;
+        font-size: 0.9rem;
+        letter-spacing: 1px;
+    }
+
+    .modal-section {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid rgba(255, 215, 0, 0.2);
+    }
+
+    .modal-section h3 {
+        color: #ffd700;
+        margin-bottom: 10px;
+        font-size: 1rem;
+    }
+
+    .modal-section p {
+        color: #d8d5e8;
+        line-height: 1.8;
+        font-size: 0.95rem;
+    }
+
+    /* 响应式 */
+    @media (max-width: 768px) {
+        .header h1 { font-size: 2rem; }
+        .slots-container { gap: 15px; }
+        .card-slot { width: 100px; height: 150px; }
+        .btn { padding: 12px 25px; font-size: 0.95rem; }
+    }
+</style>
+</head>
+<body>
+    <div class="container">
+        <!-- 标题 -->
+        <div class="header">
+            <h1>🔮 塔罗牌抽牌游戏</h1>
+            <p>✨ 凭你的直觉，选择一张属于你的塔罗牌 ✨</p>
+        </div>
+
+        <!-- 游戏区域 -->
+        <div class="game-area">
+            <div class="slots-container" id="slotsContainer">
+                <div class="card-slot" data-slot="0" onclick="selectSlot(0)">
+                    <span class="slot-placeholder">🌙</span>
+                    <span class="slot-label">过去</span>
+                </div>
+                <div class="card-slot" data-slot="1" onclick="selectSlot(1)">
+                    <span class="slot-placeholder">⭐</span>
+                    <span class="slot-label">现在</span>
+                </div>
+                <div class="card-slot" data-slot="2" onclick="selectSlot(2)">
+                    <span class="slot-placeholder">☀️</span>
+                    <span class="slot-label">未来</span>
+                </div>
+            </div>
+
+            <div class="buttons-container">
+                <button class="btn btn-draw" id="drawBtn" onclick="drawCard()" disabled>🔮 抽取塔罗牌</button>
+                <button class="btn btn-reset" onclick="resetGame()">🔄 重新开始</button>
+            </div>
+
+            <div class="result-area" id="resultArea">
+                <div class="result-title">📜 占卜结果</div>
+                <div class="result-content" id="resultContent"></div>
+            </div>
+        </div>
+
+        <!-- 牌库 -->
+        <div class="deck-section">
+            <h2 class="deck-title">🎴 塔罗牌全览（点击查看详情）</h2>
+            <div class="deck-grid" id="deckGrid"></div>
+        </div>
+    </div>
+
+    <!-- 模态框 -->
+    <div class="modal" id="modal" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <span class="close-btn" onclick="closeModal()">✕</span>
+            <div class="modal-card-header">
+                <div class="modal-emoji" id="modalEmoji"></div>
+                <div class="modal-card-name" id="modalName"></div>
+                <div class="modal-card-type" id="modalType"></div>
+            </div>
+            <div class="modal-section">
+                <h3>📖 牌面含义</h3>
+                <p id="modalMeaning"></p>
+            </div>
+            <div class="modal-section">
+                <h3>💫 正位解读</h3>
+                <p id="modalUpright"></p>
+            </div>
+            <div class="modal-section">
+                <h3>🌙 逆位解读</h3>
+                <p id="modalReversed"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 塔罗牌数据
+        const tarotCards = [
+            { name: "愚者", emoji: "🃏", type: "大阿尔克那", meaning: "新的开始、冒险、纯真、 spontaneity", upright: "新的旅程即将开始。保持开放的心态，勇敢迈出第一步，宇宙会为你让路。", reversed: "可能过于冲动或准备不足。需要更多思考和计划，避免盲目冒险。" },
+            { name: "魔术师", emoji: "🎩", type: "大阿尔克那", meaning: "创造、意志、技能、自信", upright: "你拥有实现梦想所需的所有工具。专注目标，发挥创造力，奇迹即将发生。", reversed: "可能存在欺骗或技能滥用。需要审视自己的动机，避免 manipulation。" },
+            { name: "女祭司", emoji: "🌙", type: "大阿尔克那", meaning: "直觉、神秘、内在智慧、潜意识", upright: "相信你的直觉。答案就在你内心深处，静下心聆听内在的声音。", reversed: "可能忽视了直觉。需要重新连接内在自我，避免被表面现象迷惑。" },
+            { name: "女皇", emoji: "👑", type: "大阿尔克那", meaning: "丰饶、母性、美丽、自然", upright: "丰收与滋养的时刻。拥抱创造力，照顾自己与他人，享受生活的美好。", reversed: "可能过度依赖或缺乏自我照顾。需要建立健康的界限。" },
+            { name: "皇帝", emoji: "🏛️", type: "大阿尔克那", meaning: "权威、结构、控制、父性", upright: "建立秩序和结构。发挥领导力，制定规则，稳定是成功的关键。", reversed: "可能过于控制或缺乏纪律。需要平衡权威与灵活性。" },
+            { name: "教皇", emoji: "📿", type: "大阿尔克那", meaning: "传统、信仰、教育、指导", upright: "寻求智慧与传统。向导师学习，遵循 proven 路径，精神成长在即。", reversed: "可能过于教条或需要打破常规。质疑传统，寻找自己的道路。" },
+            { name: "恋人", emoji: "💕", type: "大阿尔克那", meaning: "爱情、关系、选择、和谐", upright: "重要的关系或选择出现。跟随内心，真爱与和谐在等待着你。", reversed: "关系可能失衡或面临艰难选择。需要重新评估价值观。" },
+            { name: "战车", emoji: "🏇", type: "大阿尔克那", meaning: "意志、决心、胜利、控制", upright: "坚持就是胜利。掌控自己的情绪与方向，勇往直前，成功属于你。", reversed: "可能感到失控或方向不明。需要重新掌控，避免冲动行事。" },
+            { name: "力量", emoji: "🦁", type: "大阿尔克那", meaning: "勇气、耐心、内在力量、温柔", upright: "温柔的力量胜过强硬。以耐心和勇气面对挑战，你比想象中更强大。", reversed: "可能感到软弱或缺乏信心。需要重新发现内在的力量。" },
+            { name: "隐士", emoji: "🏮", type: "大阿尔克那", meaning: "内省、孤独、智慧、寻找", upright: "独处带来智慧。退后一步反思，内在的灯塔会指引你前进。", reversed: "可能过于孤立或逃避。需要平衡独处与社交。" },
+            { name: "命运之轮", emoji: "☸️", type: "大阿尔克那", meaning: "命运、转变、机会、循环", upright: "转折点到来。抓住机会，顺应变化，好运正在转动。", reversed: "可能感到运气不佳或抗拒改变。接受无常，低谷即将过去。" },
+            { name: "正义", emoji: "⚖️", type: "大阿尔克那", meaning: "公平、真理、因果、法律", upright: "公正与平衡。诚实面对自己和他人，因果报应，做出正确选择。", reversed: "可能遭遇不公或逃避责任。需要重新审视自己的道德标准。" },
+            { name: "倒吊人", emoji: "🙃", type: "大阿尔克那", meaning: "牺牲、新视角、等待、放手", upright: "换个角度看世界。暂停与牺牲带来顿悟，放手反而获得自由。", reversed: "可能无谓牺牲或停滞。需要知道何时坚持，何时放手。" },
+            { name: "死神", emoji: "💀", type: "大阿尔克那", meaning: "结束、转变、重生、释放", upright: "一个章节结束，新的篇章开始。拥抱改变，放下过去，重生在即。", reversed: "可能抗拒必要的结束。需要学会放手，才能迎接新生。" },
+            { name: "节制", emoji: "🏺", type: "大阿尔克那", meaning: "平衡、节制、和谐、耐心", upright: "中庸之道带来和谐。平衡各方，耐心调和，一切都会恰到好处。", reversed: "可能失衡或过度。需要重新调整生活的优先级。" },
+            { name: "恶魔", emoji: "😈", type: "大阿尔克那", meaning: "束缚、欲望、阴影、成瘾", upright: "面对内心的阴影。识别束缚你的枷锁，只有正视才能解脱。", reversed: "即将摆脱束缚。释放负面模式，重获自由。" },
+            { name: "高塔", emoji: "⚡", type: "大阿尔克那", meaning: "突变、启示、崩塌、觉醒", upright: "突变带来启示。旧结构崩塌是为了重建更坚固的基础，顺其自然。", reversed: "可能避免必要的改变。需要主动面对，否则变化会更剧烈。" },
+            { name: "星星", emoji: "⭐", type: "大阿尔克那", meaning: "希望、灵感、宁静、疗愈", upright: "希望之光照亮前路。保持信念，疗愈与灵感正在流入你的生活。", reversed: "可能感到失望或失去信心。需要重新点燃内心的希望之火。" },
+            { name: "月亮", emoji: "🌙", type: "大阿尔克那", meaning: "幻象、恐惧、潜意识、直觉", upright: "迷雾中前行。相信直觉而非表象，恐惧源于未知，真相即将揭晓。", reversed: "迷雾即将散去。真相大白，恐惧消散， clarity 到来。" },
+            { name: "太阳", emoji: "☀️", type: "大阿尔克那", meaning: "快乐、成功、活力、喜悦", upright: "阳光普照。成功、快乐与活力充满你的生活，尽情享受这份喜悦。", reversed: "可能暂时阴霾。快乐被遮蔽，需要主动寻找光明。" },
+            { name: "审判", emoji: "📯", type: "大阿尔克那", meaning: "重生、内在呼唤、宽恕、觉醒", upright: "觉醒时刻。听到内心的呼唤，宽恕过去，迎接新生。", reversed: "可能自我怀疑或逃避召唤。需要正视过去，才能向前。" },
+            { name: "世界", emoji: "🌍", type: "大阿尔克那", meaning: "完成、成就、满足、旅行", upright: "圆满达成。一个循环完美结束，成就感满满，新的旅程在等待。", reversed: "可能感到不完整。需要最后的努力，或接受不完美。" },
+            { name: "权杖一", emoji: "🪄", type: "权杖牌组", meaning: "创造、灵感、新机会、潜力", upright: "新的创意火花点燃。抓住机会，热情与能量推动你前进。", reversed: "可能缺乏动力或方向。需要重新找到激情。" },
+            { name: "圣杯一", emoji: "🏆", type: "圣杯牌组", meaning: "新感情、直觉、创造力、灵性", upright: "新的情感体验。心灵敞开，爱与直觉流入，情感满足。", reversed: "可能情感压抑或空虚。需要重新连接感受。" },
+            { name: "宝剑一", emoji: "⚔️", type: "宝剑牌组", meaning: "真相、清晰、新想法、突破", upright: "头脑清晰。新的想法带来突破，真相显现，沟通顺畅。", reversed: "可能思维混乱或沟通不畅。需要澄清想法。" },
+            { name: "星币一", emoji: "💰", type: "星币牌组", meaning: "新机会、繁荣、稳定、实现", upright: "物质新起点。财务或事业机会出现，脚踏实地，收获在即。", reversed: "可能财务不稳或机会流失。需要更务实的规划。" }
+        ];
+
+        let selectedSlot = null;
+        let drawnCards = [null, null, null];
+        let selectedCards = new Set();
+
+        // 初始化牌库展示
+        function initDeck() {
+            const grid = document.getElementById('deckGrid');
+            grid.innerHTML = '';
+            tarotCards.forEach((card, index) => {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'deck-card';
+                cardEl.innerHTML = `
+                    <div class="emoji">${card.emoji}</div>
+                    <div class="name">${card.name}</div>
+                `;
+                cardEl.onclick = () => showCardDetail(index);
+                grid.appendChild(cardEl);
+            });
+        }
+
+        // 选择卡槽
+        function selectSlot(index) {
+            if (drawnCards[index]) return; // 已抽牌的槽位不能重选
+            
+            document.querySelectorAll('.card-slot').forEach((slot, i) => {
+                slot.classList.toggle('selected', i === index);
+            });
+            selectedSlot = index;
+            document.getElementById('drawBtn').disabled = false;
+        }
+
+        // 抽牌
+        function drawCard() {
+            if (selectedSlot === null) {
+                alert('请先选择一个卡片槽位！');
+                return;
+            }
+
+            // 获取未抽过的牌
+            const availableCards = tarotCards.filter((_, idx) => !selectedCards.has(idx));
+            if (availableCards.length === 0) {
+                alert('所有牌都已抽完！');
+                return;
+            }
+
+            const randomCard = availableCards[Math.floor(Math.random() * availableCards.length)];
+            const cardIndex = tarotCards.indexOf(randomCard);
+            const isReversed = Math.random() < 0.3; // 30%概率逆位
+            
+            selectedCards.add(cardIndex);
+            drawnCards[selectedSlot] = { card: randomCard, isReversed, index: cardIndex };
+
+            // 更新槽位显示
+            const slotEl = document.querySelector(`[data-slot="${selectedSlot}"]`);
+            slotEl.classList.remove('selected');
+            slotEl.classList.add('filled');
+            slotEl.innerHTML = `
+                <div class="card-display">
+                    <div class="card-emoji">${randomCard.emoji}</div>
+                    <div class="card-name">${randomCard.name}</div>
+                    <div class="card-orientation">${isReversed ? '逆位' : '正位'}</div>
+                </div>
+            `;
+
+            // 显示结果
+            showResult();
+            
+            // 重置选择
+            selectedSlot = null;
+            document.getElementById('drawBtn').disabled = true;
+
+            // 检查是否全部抽完
+            if (drawnCards.every(c => c !== null)) {
+                setTimeout(() => {
+                    document.getElementById('resultArea').innerHTML += 
+                        '<br><br>🎉 <strong>三牌阵已完成！这是你的完整占卜解读。</strong>';
+                }, 500);
+            }
+        }
+
+        // 显示结果
+        function showResult() {
+            const resultArea = document.getElementById('resultArea');
+            const resultContent = document.getElementById('resultContent');
+            
+            let html = '';
+            const positions = ['过去', '现在', '未来'];
+            
+            drawnCards.forEach((drawn, i) => {
+                if (drawn) {
+                    const interpretation = drawn.isReversed ? drawn.card.reversed : drawn.card.upright;
+                    html += `
+                        <p style="margin-bottom: 15px;">
+                            <strong style="color: #ffd700;">【${positions[i]}】${drawn.card.emoji} ${drawn.card.name}（${drawn.isReversed ? '逆位' : '正位'}）</strong><br>
+                            ${interpretation}
+                        </p>
+                    `;
+                }
+            });
+            
+            resultContent.innerHTML = html;
+            resultArea.classList.add('show');
+        }
+
+        // 重置游戏
+        function resetGame() {
+            selectedSlot = null;
+            drawnCards = [null, null, null];
+            selectedCards.clear();
+            
+            document.querySelectorAll('.card-slot').forEach((slot, i) => {
+                const placeholders = ['🌙', '⭐', '☀️'];
+                const labels = ['过去', '现在', '未来'];
+                slot.className = 'card-slot';
+                slot.innerHTML = `
+                    <span class="slot-placeholder">${placeholders[i]}</span>
+                    <span class="slot-label">${labels[i]}</span>
+                `;
+            });
+            
+            document.getElementById('drawBtn').disabled = true;
+            document.getElementById('resultArea').classList.remove('show');
+        }
+
+        // 显示卡片详情
+        function showCardDetail(index) {
+            const card = tarotCards[index];
+            document.getElementById('modalEmoji').textContent = card.emoji;
+            document.getElementById('modalName').textContent = card.name;
+            document.getElementById('modalType').textContent = card.type;
+            document.getElementById('modalMeaning').textContent = card.meaning;
+            document.getElementById('modalUpright').textContent = card.upright;
+            document.getElementById('modalReversed').textContent = card.reversed;
+            document.getElementById('modal').classList.add('show');
+        }
+
+        // 关闭模态框
+        function closeModal(event) {
+            if (!event || event.target.id === 'modal' || event.target.className === 'close-btn') {
+                document.getElementById('modal').classList.remove('show');
+            }
+        }
+
+        // 初始化
+        initDeck();
+    </script>
+</body>
+</html>
